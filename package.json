@@ -11,7 +11,8 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "pg": "^8.11.0"
+    "pg": "^8.11.0",
+    "swagger-ui-dist": "^5.32.4"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
