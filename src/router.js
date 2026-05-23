@@ -3,6 +3,9 @@ const {
   registerUser, loginUser, getUserById,
   getCategoriasByUser, createCategoria, deleteCategoria,
   getAnimesByCategoria, createAnimeEnCategoria, getAnimeById, deleteAnimeEnCategoria,
+  createAnimeUsuario, getAnimesByUsuario, getAnimeUsuarioById, deleteAnimeUsuario,
+  createPersonajeUsuario, getPersonajesByAnimeUsuario, getPersonajeUsuarioById, deletePersonajeUsuario,
+  addImagenPersonajeUsuario, getImagenesByPersonajeUsuario, deleteImagenUsuario,
 } = require('./db');
 
 const { verifyToken } = require('./auth');
@@ -168,6 +171,97 @@ async function handleRequest(req, res) {
     if (path === '/docs' || path === '/docs/') {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       return res.end(require('./swaggerUI'));
+    }
+
+    // ── ANIMES USUARIOS ────────────────────────────────────────────────────────
+
+    if (path === '/api/mis-animes-custom' && method === 'GET') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      const data = await getAnimesByUsuario(payload.id);
+      return sendJSON(res, 200, { data, total: data.length });
+    }
+
+    if (path === '/api/mis-animes-custom' && method === 'POST') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      const body = await parseBody(req);
+      if (!body.nombre) return sendJSON(res, 400, { error: 'nombre es requerido' });
+      const anime = await createAnimeUsuario(payload.id, body);
+      return sendJSON(res, 201, { message: 'Anime creado', data: anime });
+    }
+
+    const delAnimeCustomMatch = path.match(/^\/api\/mis-animes-custom\/(\d+)$/);
+    if (delAnimeCustomMatch && method === 'DELETE') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      await deleteAnimeUsuario(payload.id, parseInt(delAnimeCustomMatch[1]));
+      return sendJSON(res, 200, { message: 'Anime eliminado' });
+    }
+
+    // ── PERSONAJES USUARIOS ────────────────────────────────────────────────────
+
+    const getPersonajesCustomMatch = path.match(/^\/api\/mis-animes-custom\/(\d+)\/personajes$/);
+    if (getPersonajesCustomMatch && method === 'GET') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      const data = await getPersonajesByAnimeUsuario(payload.id, parseInt(getPersonajesCustomMatch[1]));
+      return sendJSON(res, 200, { data, total: data.length });
+    }
+
+    const postPersonajesCustomMatch = path.match(/^\/api\/mis-animes-custom\/(\d+)\/personajes$/);
+    if (postPersonajesCustomMatch && method === 'POST') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      const body = await parseBody(req);
+      if (!body.nombre) return sendJSON(res, 400, { error: 'nombre es requerido' });
+      const personaje = await createPersonajeUsuario(payload.id, parseInt(postPersonajesCustomMatch[1]), body);
+      return sendJSON(res, 201, { message: 'Personaje creado', data: personaje });
+    }
+
+    const delPersonajeCustomMatch = path.match(/^\/api\/mis-personajes\/(\d+)$/);
+    if (delPersonajeCustomMatch && method === 'DELETE') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      await deletePersonajeUsuario(payload.id, parseInt(delPersonajeCustomMatch[1]));
+      return sendJSON(res, 200, { message: 'Personaje eliminado' });
+    }
+
+    const getPersonajeCustomMatch = path.match(/^\/api\/mis-personajes\/(\d+)$/);
+    if (getPersonajeCustomMatch && method === 'GET') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      const data = await getPersonajeUsuarioById(payload.id, parseInt(getPersonajeCustomMatch[1]));
+      if (!data) return sendJSON(res, 404, { error: 'Personaje no encontrado' });
+      return sendJSON(res, 200, { data });
+    }
+
+    // ── IMÁGENES USUARIOS ──────────────────────────────────────────────────────
+
+    const getImagenesCustomMatch = path.match(/^\/api\/mis-personajes\/(\d+)\/imagenes$/);
+    if (getImagenesCustomMatch && method === 'GET') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      const data = await getImagenesByPersonajeUsuario(parseInt(getImagenesCustomMatch[1]));
+      return sendJSON(res, 200, { data, total: data.length });
+    }
+
+    const postImagenesCustomMatch = path.match(/^\/api\/mis-personajes\/(\d+)\/imagenes$/);
+    if (postImagenesCustomMatch && method === 'POST') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      const body = await parseBody(req);
+      if (!body.url) return sendJSON(res, 400, { error: 'url es requerida' });
+      const imagen = await addImagenPersonajeUsuario(payload.id, parseInt(postImagenesCustomMatch[1]), body);
+      return sendJSON(res, 201, { message: 'Imagen agregada', data: imagen });
+    }
+
+    const delImagenCustomMatch = path.match(/^\/api\/mis-imagenes\/(\d+)$/);
+    if (delImagenCustomMatch && method === 'DELETE') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      await deleteImagenUsuario(payload.id, parseInt(delImagenCustomMatch[1]));
+      return sendJSON(res, 200, { message: 'Imagen eliminada' });
     }
 
     return sendJSON(res, 404, { error: 'Ruta no encontrada' });
