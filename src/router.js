@@ -3,8 +3,8 @@ const {
   registerUser, loginUser, getUserById,
   getCategoriasByUser, createCategoria, deleteCategoria,
   getAnimesByCategoria, createAnimeEnCategoria, getAnimeById, deleteAnimeEnCategoria,
-  createAnimeUsuario, getAnimesByUsuario, getAnimeUsuarioById, deleteAnimeUsuario,
-  createPersonajeUsuario, getPersonajesByAnimeUsuario, getPersonajeUsuarioById, deletePersonajeUsuario,
+  createAnimeUsuario, getAnimesByUsuario, getAnimeUsuarioById, deleteAnimeUsuario, updateAnimeUsuario,
+  createPersonajeUsuario, getPersonajesByAnimeUsuario, getPersonajeUsuarioById, deletePersonajeUsuario, updatePersonajeUsuario,
   addImagenPersonajeUsuario, getImagenesByPersonajeUsuario, deleteImagenUsuario,
 } = require('./db');
 
@@ -14,7 +14,7 @@ function sendJSON(res, status, data) {
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   });
   res.end(JSON.stringify(data));
@@ -37,17 +37,17 @@ async function handleRequest(req, res) {
   const method = req.method;
 
   if (method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin':  '*',
-      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    });
-    return res.end();
-  }
+  res.writeHead(204, {
+    'Access-Control-Allow-Origin':  '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  });
+  return res.end();
+}
 
   try {
 
-    // ── Health check ──────────────────────────────────────────────────────────
     if (path === '/' && method === 'GET') {
       return sendJSON(res, 200, { status: 'ok', message: '🎌 Anime API v2.0 funcionando' });
     }
@@ -191,15 +191,21 @@ async function handleRequest(req, res) {
       return sendJSON(res, 201, { message: 'Anime creado', data: anime });
     }
 
-    const delAnimeCustomMatch = path.match(/^\/api\/mis-animes-custom\/(\d+)$/);
-    if (delAnimeCustomMatch && method === 'DELETE') {
+    const animeCustomMatch = path.match(/^\/api\/mis-animes-custom\/(\d+)$/);
+    if (animeCustomMatch && method === 'DELETE') {
       const payload = verifyToken(req);
       if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
-      await deleteAnimeUsuario(payload.id, parseInt(delAnimeCustomMatch[1]));
+      await deleteAnimeUsuario(payload.id, parseInt(animeCustomMatch[1]));
       return sendJSON(res, 200, { message: 'Anime eliminado' });
     }
 
-    // ── PERSONAJES USUARIOS ────────────────────────────────────────────────────
+    if (animeCustomMatch && method === 'PUT') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      const body = await parseBody(req);
+      const anime = await updateAnimeUsuario(payload.id, parseInt(animeCustomMatch[1]), body);
+      return sendJSON(res, 200, { message: 'Anime actualizado', data: anime });
+    }
 
     const getPersonajesCustomMatch = path.match(/^\/api\/mis-animes-custom\/(\d+)\/personajes$/);
     if (getPersonajesCustomMatch && method === 'GET') {
@@ -219,19 +225,26 @@ async function handleRequest(req, res) {
       return sendJSON(res, 201, { message: 'Personaje creado', data: personaje });
     }
 
-    const delPersonajeCustomMatch = path.match(/^\/api\/mis-personajes\/(\d+)$/);
-    if (delPersonajeCustomMatch && method === 'DELETE') {
+    const personajeCustomMatch = path.match(/^\/api\/mis-personajes\/(\d+)$/);
+    if (personajeCustomMatch && method === 'DELETE') {
       const payload = verifyToken(req);
       if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
-      await deletePersonajeUsuario(payload.id, parseInt(delPersonajeCustomMatch[1]));
+      await deletePersonajeUsuario(payload.id, parseInt(personajeCustomMatch[1]));
       return sendJSON(res, 200, { message: 'Personaje eliminado' });
     }
 
-    const getPersonajeCustomMatch = path.match(/^\/api\/mis-personajes\/(\d+)$/);
-    if (getPersonajeCustomMatch && method === 'GET') {
+    if (personajeCustomMatch && method === 'PUT') {
       const payload = verifyToken(req);
       if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
-      const data = await getPersonajeUsuarioById(payload.id, parseInt(getPersonajeCustomMatch[1]));
+      const body = await parseBody(req);
+      const personaje = await updatePersonajeUsuario(payload.id, parseInt(personajeCustomMatch[1]), body);
+      return sendJSON(res, 200, { message: 'Personaje actualizado', data: personaje });
+    }
+
+    if (personajeCustomMatch && method === 'GET') {
+      const payload = verifyToken(req);
+      if (!payload) return sendJSON(res, 401, { error: 'No autorizado' });
+      const data = await getPersonajeUsuarioById(payload.id, parseInt(personajeCustomMatch[1]));
       if (!data) return sendJSON(res, 404, { error: 'Personaje no encontrado' });
       return sendJSON(res, 200, { data });
     }

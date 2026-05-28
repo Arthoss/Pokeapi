@@ -1,0 +1,6 @@
+projectKey=anime-api
+serverUrl=http://localhost:9000
+serverVersion=26.5.0.122743
+dashboardUrl=http://localhost:9000/dashboard?id=anime-api
+ceTaskId=fc0e5efd-1e64-437d-825b-bf0658d2bdc4
+ceTaskUrl=http://localhost:9000/api/ce/task?id=fc0e5efd-1e64-437d-825b-bf0658d2bdc4

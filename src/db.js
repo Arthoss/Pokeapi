@@ -277,12 +277,41 @@ async function deleteImagenUsuario(userId, imagenId) {
   );
 }
 
+async function updateAnimeUsuario(userId, animeId, { nombre, descripcion, genero, imagen_url }) {
+  const { rows } = await pool.query(
+    `UPDATE animes_usuarios 
+     SET nombre = COALESCE($1, nombre),
+         descripcion = COALESCE($2, descripcion),
+         genero = COALESCE($3, genero),
+         imagen_url = COALESCE($4, imagen_url)
+     WHERE id = $5 AND usuario_id = $6
+     RETURNING *`,
+    [nombre || null, descripcion || null, genero || null, imagen_url || null, animeId, userId]
+  );
+  return rows[0];
+}
+
+async function updatePersonajeUsuario(userId, personajeId, { nombre, edad, poder_tecnica, origen, descripcion }) {
+  const { rows } = await pool.query(
+    `UPDATE personajes_usuarios
+     SET nombre = COALESCE($1, nombre),
+         edad = COALESCE($2, edad),
+         poder_tecnica = COALESCE($3, poder_tecnica),
+         origen = COALESCE($4, origen),
+         descripcion = COALESCE($5, descripcion)
+     WHERE id = $6 AND usuario_id = $7
+     RETURNING *`,
+    [nombre || null, edad || null, poder_tecnica || null, origen || null, descripcion || null, personajeId, userId]
+  );
+  return rows[0];
+}
+
 module.exports = {
   getAnimes, getAllPersonajes, getPersonajeByNombre, getPersonajesByAnime, getImagenesByNombre,
   registerUser, loginUser, getUserById,
   getCategoriasByUser, createCategoria, deleteCategoria,
   getAnimesByCategoria, createAnimeEnCategoria, getAnimeById, deleteAnimeEnCategoria,
-  createAnimeUsuario, getAnimesByUsuario, getAnimeUsuarioById, deleteAnimeUsuario,
-  createPersonajeUsuario, getPersonajesByAnimeUsuario, getPersonajeUsuarioById, deletePersonajeUsuario,
+  createAnimeUsuario, getAnimesByUsuario, getAnimeUsuarioById, deleteAnimeUsuario, updateAnimeUsuario,
+  createPersonajeUsuario, getPersonajesByAnimeUsuario, getPersonajeUsuarioById, deletePersonajeUsuario, updatePersonajeUsuario,
   addImagenPersonajeUsuario, getImagenesByPersonajeUsuario, deleteImagenUsuario,
 };
